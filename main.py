@@ -7,9 +7,9 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
 
 
-# ==========================
+
 # 1. Încărcare dataset ORL
-# ==========================
+
 def load_orl_dataset(root_dir, n_persons=40, n_train=5, n_test=5):
     train_images = []
     train_labels = []
@@ -51,10 +51,9 @@ def load_orl_dataset(root_dir, n_persons=40, n_train=5, n_test=5):
     return X_train, y_train, X_test, y_test
 
 
-# =======================================
+
 # 2. Bayes gaussian cu covarianță comună
-#    (implementat "de mână")
-# =======================================
+
 def train_bayes_gaussian(Z_train, y_train, reg=1e-3):
     """
     Antrenează un clasificator Bayes gaussian cu:
@@ -127,10 +126,8 @@ def predict_bayes_gaussian(Z_test, params):
 
     return np.array(y_pred)
 
-
-# ==========================
 # 3. Rulare experiment
-# ==========================
+
 def run_experiment(n_train, n_test, n_components=50):
     print(f"\n=== Experiment {n_train}/{n_test} (train/test imagini per persoană) ===")
 
@@ -154,7 +151,7 @@ def run_experiment(n_train, n_test, n_components=50):
     print("Z_train shape:", Z_train.shape)
     print("Z_test shape :", Z_test.shape)
 
-    # Bayes gaussian (implementat de tine)
+    # Bayes gaussian 
     params = train_bayes_gaussian(Z_train, y_train, reg=1e-2)
     y_pred = predict_bayes_gaussian(Z_test, params)
 
@@ -214,7 +211,7 @@ def reconstruct_and_plot_rsz(n_train=5, n_test=5, ms=None, img_global_id=1):
         "orl_faces", n_persons=40, n_train=n_train, n_test=n_test
     )
 
-    # determinăm folderul imaginii
+    # determin folderul imaginii
     person_id = (img_global_id - 1) // 10 + 1
     person_folder = os.path.join("orl_faces", f"s{person_id:02d}")
     img_path = os.path.join(person_folder, f"{img_global_id:03d}.bmp")
@@ -236,7 +233,7 @@ def reconstruct_and_plot_rsz(n_train=5, n_test=5, ms=None, img_global_id=1):
         # RMSE
         e = np.sqrt(np.mean((x_hat - x_orig) ** 2))
 
-        # RSZ conform documentului
+        # RSZ document
         rsz = -20 * np.log10(255.0 / (e + 1e-12))
         rsz_values.append(rsz)
 
@@ -266,9 +263,9 @@ def reconstruct_and_plot_rsz(n_train=5, n_test=5, ms=None, img_global_id=1):
     # --- Grafic RSZ ---
     plt.figure()
     plt.plot(ms, rsz_values, marker="o")
-    plt.xlabel("Număr componente PCA (m)")
+    plt.xlabel("Numar componente PCA (m)")
     plt.ylabel("RSZ (dB)")
-    plt.title("RSZ în funcție de numărul de componente PCA")
+    plt.title("RSZ in funcție de numarul de componente PCA")
     plt.grid(True)
     plt.savefig("rsz_vs_m.png", dpi=200, bbox_inches="tight")
     plt.close()
@@ -276,27 +273,27 @@ def reconstruct_and_plot_rsz(n_train=5, n_test=5, ms=None, img_global_id=1):
 
 def plot_energy_vs_components(max_m=100, split_train=5, split_test=5):          #GRAFIC ENERGIE F(m)
     """
-    Calculează energia cumulată F(m) = sum_{i=1..m} explained_variance_ratio_i
+    Calculează energia cumulata F(m) = sum_{i=1..m} explained_variance_ratio_i
     și o salvează ca energy_vs_m.png
     """
     X_train, y_train, X_test, y_test = load_orl_dataset(
         "orl_faces", n_persons=40, n_train=split_train, n_test=split_test
     )
 
-    # PCA cu număr mare de componente ca să putem calcula cumulativ
+    # PCA cu numar mare de componente ca să putem calcula cumulativ
     pca_full = PCA(n_components=max_m, whiten=False)
     pca_full.fit(X_train)
 
     evr = pca_full.explained_variance_ratio_           # energie pe fiecare componentă
-    F = np.cumsum(evr)                                 # energie cumulată
+    F = np.cumsum(evr)                                 # energie cumulata
 
     ms = np.arange(1, len(F) + 1)
 
     plt.figure()
     plt.plot(ms, F, marker="o")
-    plt.xlabel("Număr componente PCA (m)")
-    plt.ylabel("Energie cumulată F(m)")
-    plt.title("Factorul de conservare a energiei în funcție de m")
+    plt.xlabel("Numar componente PCA (m)")
+    plt.ylabel("Energie cumulata F(m)")
+    plt.title("Factorul de conservare a energiei in funcție de m")
     plt.grid(True)
     plt.ylim(0, 1.01)
 
@@ -304,7 +301,7 @@ def plot_energy_vs_components(max_m=100, split_train=5, split_test=5):          
     plt.close()
     print("Saved: energy_vs_m.png")
 
-    # opțional: raportează m pentru 90%, 95%, 98%
+    # optional: raportează m pentru 90%, 95%, 98%
     for target in [0.90, 0.95, 0.98]:
         m_needed = int(np.argmax(F >= target) + 1)
         print(f"Pentru F={target:.2f} ai nevoie de m={m_needed} componente")
