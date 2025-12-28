@@ -203,3 +203,71 @@ def plot_accuracy_vs_components():
     plt.close()
     print("Saved: accuracy_vs_m.png")
 
+def reconstruct_and_plot_rsz(n_train=5, n_test=5, ms=None, img_global_id=1):
+    if ms is None:
+        ms = [5, 10, 20, 30, 40, 50, 75, 100]
+
+    # folosim setul de train doar ca să învățăm PCA
+    X_train, y_train, X_test, y_test = load_orl_dataset(
+        "orl_faces", n_persons=40, n_train=n_train, n_test=n_test
+    )
+
+    # determinăm folderul imaginii
+    person_id = (img_global_id - 1) // 10 + 1
+    person_folder = os.path.join("orl_faces", f"s{person_id:02d}")
+    img_path = os.path.join(person_folder, f"{img_global_id:03d}.bmp")
+
+    img_orig = imageio.imread(img_path).astype(np.float32)
+    h, w = img_orig.shape
+    x_orig = img_orig.flatten()
+
+    rsz_values = []
+    reconstructions = []
+
+    for m in ms:
+        pca = PCA(n_components=m, whiten=True)
+        pca.fit(X_train)
+
+        z = pca.transform(x_orig.reshape(1, -1))
+        x_hat = pca.inverse_transform(z).reshape(-1)
+
+        # RMSE
+        e = np.sqrt(np.mean((x_hat - x_orig) ** 2))
+
+        # RSZ conform documentului
+        rsz = -20 * np.log10(255.0 / (e + 1e-12))
+        rsz_values.append(rsz)
+
+        reconstructions.append(x_hat.reshape(h, w))
+
+        print(f"m={m:3d} | RMSE={e:.4f} | RSZ={rsz:.2f} dB")
+
+    # --- Afișare imagini ---
+    plt.figure(figsize=(10, 8))
+    plt.subplot(3, 4, 1)
+    plt.imshow(img_orig, cmap="gray")
+    plt.title("Original")
+    plt.axis("off")
+
+    for i, (m, rec) in enumerate(zip(ms, reconstructions), start=2):
+        plt.subplot(3, 4, i)
+        plt.imshow(rec, cmap="gray")
+        plt.title(f"m={m}")
+        plt.axis("off")
+
+    plt.suptitle("Reconstrucția imaginilor folosind PCA")
+    plt.tight_layout()
+    plt.savefig("reconstructii_pca.png", dpi=200, bbox_inches="tight")
+    plt.close()
+    print("Saved: reconstructii_pca.png")
+
+    # --- Grafic RSZ ---
+    plt.figure()
+    plt.plot(ms, rsz_values, marker="o")
+    plt.xlabel("Număr componente PCA (m)")
+    plt.ylabel("RSZ (dB)")
+    plt.title("RSZ în funcție de numărul de componente PCA")
+    plt.grid(True)
+    plt.savefig("rsz_vs_m.png", dpi=200, bbox_inches="tight")
+    plt.close()
+    print("Saved: rsz_vs_m.png")
